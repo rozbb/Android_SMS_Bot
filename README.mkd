@@ -1,0 +1,18 @@
+##Android SMS Auto-Responder##
+
+Respond to text messages from a set list of numbers with either a random txting shrthnd or the reverse of the received message.
+
+####Usage:####
+Place the two txt files on the root of your SD card
+Run the script with [SL4A](https://code.google.com/p/android-scripting/).
+
+####Target Respond List Syntax:####
+Note: A sample file (target_respond_list.txt) has been provided.
+Begin each block of respond action with either:
+
+	reverse:
+or
+
+	random:
+
+Put the 10 digit number on its own line. All non-numeric data is ignored. The comments in the sample do <b>not</b> have to be preceded by a //, that's just how I chose to write them. Numbers may be repeated any number of times and so may blocks (not sure why one would do that, though).

@@ -1,0 +1,7 @@
+random:
+5555551337  // "Friend"
+2125559012  // "Enemy"
+
+reverse:
+8175550246  // "Not sure"
+2125557201  // "Friend"
