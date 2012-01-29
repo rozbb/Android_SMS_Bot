@@ -3,55 +3,79 @@ import time
 import random
 import re
 
+crapTextFile = "/sdcard/txt_list.txt"
+targetsFile = "/sdcard/target_respond_list.txt"
+
+
 droid = android.Android()
 
-messages = []
-with open("/sdcard/txt_list.txt") as file:
+# Get the messages to be sent randomly
+crapMessages = []
+with open(crapTextFile) as file:
 	for line in file:
-		messages.append(line.strip())
+		crapMessages.append(line.strip())
 
-def checkNumbers(filename):
-	pattern = r"1?\D*(\d{3})\D*(\d{3})\D*(\d{4})"
-	returnList = []
-	file = open(filename)
-	line = file.readline()
-	while line:
-			if re.search(pattern, line):
-				returnList.append(''.join(re.search(pattern, line).groups()))
-			line = file.readline()
+# Convert the numbers and rules of the file into a dictionary(number,set([rules]))
+def parseFile(filename):
+	validNumber = re.compile(r"1?\D*(\d{3})\D*(\d{3})\D*(\d{4})")
+	numbers = dict()
+	currentRule = ""
+	with open(filename) as file:
+		for line in file:
+			# Establish rules
+			if line.strip() == "random:": currentRule = "random"
+			if line.strip() == "reverse:": currentRule = "reverse"
+			if not currentRule: continue
 
-	file.close()
-	return tuple(returnList)
+			if validNumber.search(line):
+			    number = ''.join(validNumber.search(line).groups())
+			    if number in numbers.keys():
+			        numbers[number] = numbers[number].union(set([currentRule]))
+			    else:
+			        numbers[number] = set([currentRule])
+	return numbers
 
 
 messageCount = droid.smsGetMessageCount(True)[1]
 
-targetNumbers = checkNumbers("/sdcard/target_respond_list.txt")
+targetNumbers = parseFile(targetsFile)
 
 print "Starting with " + str(messageCount) + " unread messages"
-print "Message list:"
-print messages
-print "Target numbers:"
-print targetNumbers
+print "Crap Message list:"
+print crapMessages
+print "\n\nTarget numbers:"
+for key in targetNumbers:
+	responseStr = ""
+	for response in targetNumbers[key]:
+		responseStr += response + "  "
+	print key + "\t" + responseStr
+print "\n"
 
 loopCount = -1
 
 while True:
 	loopCount += 1
 	if droid.smsGetMessageCount(True)[1] > messageCount:
-		number = droid.smsGetMessages(True)[1].pop()['address'].replace('+1', '')
+		message = droid.smsGetMessages(True)[1][0]
+		#print message
+		number = message['address'].replace('+1', '')
 		print "Got a message from: " + number 
-		if number in targetNumbers:
-			print "Sending crap to it..."
-			droid.smsSend(number, messages[random.randrange(0, len(messages))])
+		if number in targetNumbers.keys():
+			for method in targetNumbers[number]: # Iterate through all responses in the set
+				if method == "random":
+					print "Sending random crap to it..."
+					droid.smsSend(number, crapMessages[random.randrange(0, len(crapMessages))])
+				elif method == "reverse":
+					print "Sending the reverse to it..."
+					droid.smsSend(number, message['body'][::-1])
 
 	messageCount = droid.smsGetMessageCount(True)[1]
 
-	if loopCount is 30:	# Check for number change every minute
-		tmpList = checkNumbers("/sdcard/target_respond_list.txt")
-		if tmpList != targetNumbers:
+	if loopCount is 30:	# Check for number change every minute (sleep time between loops is 2 sec)
+		tmpDict = parseFile(targetsFile)
+		if tmpDict != targetNumbers:
 			print "Target numbers changed"
-			targetNumbers = tmpList
+			targetNumbers = tmpDict
 		loopCount = 0
 
 	time.sleep(2)
