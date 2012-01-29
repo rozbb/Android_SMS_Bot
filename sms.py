@@ -1,18 +1,26 @@
+import android
 import time
 import random
-import android
+import re
 
 droid = android.Android()
+
 messages = []
 with open("/sdcard/txt_list.txt") as file:
 	for line in file:
 		messages.append(line.strip())
 
 def checkNumbers(filename):
+	pattern = r"1?\D*(\d{3})\D*(\d{3})\D*(\d{4})"
 	returnList = []
-	with open(filename) as file:
-		for line in file:
-			returnList.append(line.strip())
+	file = open(filename)
+	line = file.readline()
+	while line:
+			if re.search(pattern, line):
+				returnList.append(''.join(re.search(pattern, line).groups()))
+			line = file.readline()
+
+	file.close()
 	return tuple(returnList)
 
 
@@ -31,7 +39,7 @@ loopCount = -1
 while True:
 	loopCount += 1
 	if droid.smsGetMessageCount(True)[1] > messageCount:
-		number = droid.smsGetMessages(True)[1].pop()['address'].replace('+', '')
+		number = droid.smsGetMessages(True)[1].pop()['address'].replace('+1', '')
 		print "Got a message from: " + number 
 		if number in targetNumbers:
 			print "Sending crap to it..."
